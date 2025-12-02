@@ -36,7 +36,7 @@ const App: React.FC = () => {
   
   // DATA STATE
   const [projects, setProjects] = usePersistentState<Project[]>('focusflow-projects', [
-    { id: 'proj-0', name: 'First Project' }
+    { id: 'proj-0', name: 'First Project', color: '#0ea5e9' }
   ]);
   const [tasks, setTasks] = usePersistentState<Task[]>('focusflow-tasks', [
     { id: 'task-0', title: "Let's get you started!", completed: false, projectId: 'proj-0', subtasks: [
@@ -197,7 +197,7 @@ const App: React.FC = () => {
 
   const renderAppModule = (appId: AppModule) => {
     switch (appId) {
-      case AppModule.DASHBOARD: return <Dashboard tasks={tasks} projects={projects} />;
+      case AppModule.DASHBOARD: return <Dashboard tasks={tasks} projects={projects} setProjects={setProjects} timeEntries={timeEntries} />;
       case AppModule.TASKS: return <TaskList tasks={tasks} projects={projects} setTasks={setTasks} setProjects={setProjects} />;
       case AppModule.TIMER: return <TimeTracker timeEntries={timeEntries} activeTimer={activeTimer} onStartTimer={handleStartTimer} onStopTimer={handleStopTimer} />;
       case AppModule.POMODORO: return <FocusTimer />;

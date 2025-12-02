@@ -106,7 +106,7 @@ const MenuBar: React.FC<MenuBarProps> = (props) => {
   };
 
   return (
-    <header ref={menuRef} className="fixed top-0 left-0 right-0 h-[var(--menubar-height)] bg-white/30 dark:bg-black/30 backdrop-blur-lg shadow-sm z-50 flex items-center justify-between px-4 text-sm text-slate-900 dark:text-slate-100 select-none">
+    <header ref={menuRef} className="fixed top-0 left-0 right-0 h-[var(--menubar-height)] bg-white/30 dark:bg-black/30 backdrop-blur-lg shadow-sm z-[9999] flex items-center justify-between px-4 text-sm text-slate-900 dark:text-slate-100 select-none">
       <div className="flex items-center gap-2">
         <div className="w-5 h-5 bg-[var(--accent-color)] rounded-md flex items-center justify-center text-white text-xs font-bold">F</div>
         {Object.entries(menus).map(([menuName, items]) => (

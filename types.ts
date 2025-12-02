@@ -1,9 +1,4 @@
 
-
-
-
-
-
 export enum AppModule {
   DASHBOARD = 'DASHBOARD',
   TASKS = 'TASKS',
@@ -37,6 +32,7 @@ export interface WindowConfig {
 export interface Project {
   id: string;
   name: string;
+  color: string;
 }
 
 export interface Subtask {

@@ -9,6 +9,8 @@ interface TaskListProps {
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
 }
 
+const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#e11d48', '#8b5cf6', '#4f46e5'];
+
 const TaskList: React.FC<TaskListProps> = ({ tasks, projects, setTasks, setProjects }) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(projects[0]?.id || null);
   const [isAddingProject, setIsAddingProject] = useState(false);
@@ -59,12 +61,15 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, projects, setTasks, setProje
   const completedTasks = useMemo(() => currentTasks.filter(t => t.completed), [currentTasks]);
   const progress = currentTasks.length > 0 ? (completedTasks.length / currentTasks.length) * 100 : 0;
 
-  // FIX: Updated handleAddProject to accept an optional SyntheticEvent to handle calls
-  // from onSubmit, onKeyDown, and onBlur, improving type safety.
   const handleAddProject = (e?: React.SyntheticEvent) => {
     e?.preventDefault();
     if (!newProjectName.trim()) return;
-    const newProject: Project = { id: `proj-${Date.now()}`, name: newProjectName.trim() };
+    const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const newProject: Project = { 
+      id: `proj-${Date.now()}`, 
+      name: newProjectName.trim(), 
+      color: randomColor 
+    };
     setProjects(prev => [...prev, newProject]);
     setSelectedProjectId(newProject.id);
     setNewProjectName('');
@@ -308,7 +313,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, projects, setTasks, setProje
                     onClick={() => setSelectedProjectId(p.id)}
                     className={`flex-1 text-left flex items-center gap-3 px-3 py-2 transition-colors text-sm rounded-l-md ${selectedProjectId === p.id ? 'bg-slate-800 font-semibold' : 'text-slate-400'}`}
                 >
-                    <Folder size={16} />
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color || '#ccc' }}></div>
                     <span className="flex-1 truncate">{p.name}</span>
                 </button>
                 <button onClick={() => handleProjectNameClick(p)} className={`p-2 text-slate-500 opacity-0 group-hover:opacity-100 hover:text-white ${selectedProjectId === p.id ? 'bg-slate-800 rounded-r-md' : ''}`}><Edit2 size={14}/></button>
@@ -325,8 +330,6 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, projects, setTasks, setProje
                 placeholder="New project..."
                 className="w-full bg-slate-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)]"
                 autoFocus
-                // FIX: Removed reference to undefined variable 'e'. Now calls handleAddProject without an argument,
-                // which is handled by the updated function signature.
                 onBlur={() => { if(!newProjectName.trim()) setIsAddingProject(false); else handleAddProject(); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddProject(e); }}
               />

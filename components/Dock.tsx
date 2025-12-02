@@ -94,10 +94,9 @@ const Dock: React.FC<DockProps> = ({ openWindows, onLaunch, onFocus }) => {
   }, []);
   
   return (
-    <footer ref={dockRef} className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50">
+    <footer ref={dockRef} className="fixed bottom-2 left-1/2 -translate-x-1/2 z-[9999]">
       <div className="flex items-end justify-center h-[var(--dock-height)] space-x-2 bg-white/30 dark:bg-black/30 backdrop-blur-xl p-2 rounded-2xl border border-white/20 shadow-dock">
         {dockItems.map((item, index) => {
-          // FIX: Implemented robust type narrowing using an if/else if/else structure. This allows TypeScript to correctly distinguish between DockFolder objects, 'divider' strings, and AppModule enums within the loop, resolving indexing and parameter type errors.
           if (typeof item === 'object' && item.type === 'folder') {
             const folder = item;
             const isFolderActive = folder.apps.some(appId => isOpen(appId));
@@ -106,12 +105,12 @@ const Dock: React.FC<DockProps> = ({ openWindows, onLaunch, onFocus }) => {
                 {openFolder === folder.name && (
                   <div className="absolute bottom-full mb-3 w-64 bg-white/30 dark:bg-black/30 backdrop-blur-xl p-3 rounded-xl border border-white/20 shadow-dock grid grid-cols-4 gap-3 animate-fade-in">
                     {folder.apps.map(appId => {
-                      const Icon = appIcons[appId];
-                      const name = appNames[appId];
+                      const Icon = appIcons[appId as AppModule];
+                      const name = appNames[appId as AppModule];
                       return (
                         <button
                           key={appId}
-                          onClick={() => { onLaunch(appId); setOpenFolder(null); }}
+                          onClick={() => { onLaunch(appId as AppModule); setOpenFolder(null); }}
                           className="flex flex-col items-center justify-center gap-1.5 group/app"
                         >
                           <div className="w-12 h-12 flex items-center justify-center bg-white/50 dark:bg-black/20 rounded-lg transition-all duration-200 group-hover/app:scale-110">
@@ -140,7 +139,7 @@ const Dock: React.FC<DockProps> = ({ openWindows, onLaunch, onFocus }) => {
           } else if (item === 'divider') {
             return <div key={`divider-${index}`} className="w-px h-12 bg-white/20 mx-1 self-center"></div>;
           } else {
-            const appId = item;
+            const appId = item as AppModule;
             const Icon = appIcons[appId];
             const name = appNames[appId];
             if (!Icon) return null;

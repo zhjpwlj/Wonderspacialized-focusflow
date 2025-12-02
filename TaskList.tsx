@@ -9,6 +9,9 @@ interface TaskListProps {
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
 }
 
+// FIX: Define COLORS array for project colors
+const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#e11d48', '#8b5cf6', '#4f46e5'];
+
 const TaskList: React.FC<TaskListProps> = ({ tasks, projects, setTasks, setProjects }) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(projects[0]?.id || null);
   const [isAddingProject, setIsAddingProject] = useState(false);
@@ -38,7 +41,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, projects, setTasks, setProje
 
   const handleAddProject = () => {
     if (!newProjectName.trim()) return;
-    const newProject: Project = { id: `proj-${Date.now()}`, name: newProjectName.trim() };
+    // FIX: Assign a random color to the new project
+    const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const newProject: Project = { id: `proj-${Date.now()}`, name: newProjectName.trim(), color: randomColor };
     setProjects(prev => [...prev, newProject]);
     setSelectedProjectId(newProject.id);
     setNewProjectName('');

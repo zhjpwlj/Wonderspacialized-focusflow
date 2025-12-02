@@ -34,6 +34,12 @@ const getTitle = (id: AppModule) => {
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
+// Constants for layout boundaries
+const MENUBAR_HEIGHT = 28;
+// Dock is 56px height + bottom-2 (8px) + potential padding/shadow. 
+// Using 88px ensures windows float comfortably above it.
+const DOCK_HEIGHT = 88; 
+
 const Window: React.FC<WindowProps> = ({ children, config, onClose, onMinimize, onToggleMaximize, onFocus, onUpdate }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState<ResizeDirection | null>(null);
@@ -87,24 +93,21 @@ const Window: React.FC<WindowProps> = ({ children, config, onClose, onMinimize, 
     if (!windowRef.current) return;
 
     if (isDragging) {
-      const parentBounds = windowRef.current.parentElement?.getBoundingClientRect();
-      if (!parentBounds) return;
-
       const newX = windowStartRect.current.x + dx;
       const newY = windowStartRect.current.y + dy;
 
-      const titleBarHeight = 36; // Corresponds to h-9 in Tailwind
+      const titleBarHeight = 40; 
       
-      // Clamp X to ensure a portion of the title bar is always accessible for dragging
+      // Clamp X to ensure a portion of the window is always visible horizontally
       const clampedX = Math.max(
         -config.width + 50, // Keep 50px of the window visible on the left
-        Math.min(newX, parentBounds.width - 50) // Keep 50px visible on the right
+        Math.min(newX, window.innerWidth - 50) // Keep 50px visible on the right
       );
       
-      // Clamp Y to prevent going under the menu bar or the title bar disappearing at the bottom
+      // Clamp Y to strictly prevent overlap with MenuBar (top) and Dock (bottom)
       const clampedY = Math.max(
-        0, // Prevent window top from going above the container (under the menu bar)
-        Math.min(newY, parentBounds.height - titleBarHeight) // Prevent title bar from being dragged off the bottom
+        MENUBAR_HEIGHT, 
+        Math.min(newY, window.innerHeight - DOCK_HEIGHT - titleBarHeight) 
       );
 
       onUpdate({ x: clampedX, y: clampedY });
@@ -114,9 +117,28 @@ const Window: React.FC<WindowProps> = ({ children, config, onClose, onMinimize, 
         let { x, y, width, height } = windowStartRect.current;
         
         if (isResizing.includes('e')) width += dx;
-        if (isResizing.includes('s')) height += dy;
         if (isResizing.includes('w')) { width -= dx; x += dx; }
-        if (isResizing.includes('n')) { height -= dy; y += dy; }
+        
+        if (isResizing.includes('s')) {
+             height += dy;
+             // Constrain height so bottom doesn't hit dock
+             if (y + height > window.innerHeight - DOCK_HEIGHT) {
+                 height = window.innerHeight - DOCK_HEIGHT - y;
+             }
+        }
+        
+        if (isResizing.includes('n')) {
+             // Constrain top so it doesn't hit menubar
+             const requestedY = y + dy;
+             if (requestedY < MENUBAR_HEIGHT) {
+                 const diff = MENUBAR_HEIGHT - requestedY;
+                 height -= dy - diff; // Adjust height change to stop at top
+                 y = MENUBAR_HEIGHT;
+             } else {
+                 height -= dy; 
+                 y += dy;
+             }
+        }
         
         onUpdate({ 
             x, 
@@ -165,10 +187,11 @@ const Window: React.FC<WindowProps> = ({ children, config, onClose, onMinimize, 
   };
   
   if (config.isMaximized) {
-    dynamicStyles.top = 0;
+    dynamicStyles.top = MENUBAR_HEIGHT; // Start below MenuBar
     dynamicStyles.left = 0;
     dynamicStyles.width = '100%';
-    dynamicStyles.height = 'calc(100% - (var(--dock-height) + 20px))';
+    // Height fills space between MenuBar and Dock
+    dynamicStyles.height = `calc(100vh - ${MENUBAR_HEIGHT}px - ${DOCK_HEIGHT}px)`;
     dynamicStyles.borderRadius = 0;
   }
 
@@ -180,37 +203,52 @@ const Window: React.FC<WindowProps> = ({ children, config, onClose, onMinimize, 
       onMouseDown={onFocus}
       onTouchStart={onFocus}
     >
-      {/* Resizers */}
+      {/* Resizers - Only available when not maximized */}
       {!config.isMaximized && (
         <>
-            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'n'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'n'})} className="absolute top-0 left-2 right-2 h-2 cursor-n-resize" />
-            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 's'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 's'})} className="absolute bottom-0 left-2 right-2 h-2 cursor-s-resize" />
-            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'w'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'w'})} className="absolute top-2 bottom-2 left-0 w-2 cursor-w-resize" />
-            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'e'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'e'})} className="absolute top-2 bottom-2 right-0 w-2 cursor-e-resize" />
-            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'nw'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'nw'})} className="absolute top-0 left-0 w-3 h-3 cursor-nw-resize" />
-            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'ne'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'ne'})} className="absolute top-0 right-0 w-3 h-3 cursor-ne-resize" />
-            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'sw'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'sw'})} className="absolute bottom-0 left-0 w-3 h-3 cursor-sw-resize" />
-            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'se'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'se'})} className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize" />
+            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'n'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'n'})} className="absolute top-0 left-2 right-2 h-3 cursor-n-resize z-10" />
+            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 's'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 's'})} className="absolute bottom-0 left-2 right-2 h-3 cursor-s-resize z-10" />
+            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'w'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'w'})} className="absolute top-2 bottom-2 left-0 w-3 cursor-w-resize z-10" />
+            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'e'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'e'})} className="absolute top-2 bottom-2 right-0 w-3 cursor-e-resize z-10" />
+            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'nw'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'nw'})} className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize z-20" />
+            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'ne'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'ne'})} className="absolute top-0 right-0 w-4 h-4 cursor-ne-resize z-20" />
+            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'sw'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'sw'})} className="absolute bottom-0 left-0 w-4 h-4 cursor-sw-resize z-20" />
+            <div onMouseDown={(e) => handleStart(e, {type: 'resize', direction: 'se'})} onTouchStart={(e) => handleStart(e, {type: 'resize', direction: 'se'})} className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize z-20" />
         </>
       )}
 
       {/* Title Bar */}
       <div
-        className="h-9 flex items-center justify-between px-3 flex-shrink-0 bg-gradient-to-b from-white/50 to-transparent dark:from-white/10"
+        className="h-10 flex items-center justify-between px-4 flex-shrink-0 bg-gradient-to-b from-white/50 to-transparent dark:from-white/10"
         onMouseDown={(e) => handleStart(e, 'drag')}
         onTouchStart={(e) => handleStart(e, 'drag')}
         onDoubleClick={onToggleMaximize}
         style={{ cursor: isDragging ? 'grabbing' : (config.isMaximized ? 'default' : 'grab') }}
       >
-        <div className="flex items-center gap-2">
-          <button onClick={onClose} className="w-3 h-3 bg-red-500 rounded-full hover:bg-red-600 transition-colors"></button>
-          <button onClick={onMinimize} className="w-3 h-3 bg-yellow-500 rounded-full hover:bg-yellow-600 transition-colors"></button>
-          <button onClick={onToggleMaximize} className="w-3 h-3 bg-green-500 rounded-full hover:bg-green-600 transition-colors"></button>
+        <div className="flex items-center gap-3">
+          <button 
+              onClick={onClose} 
+              className="w-5 h-5 bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-sm flex items-center justify-center group"
+              aria-label="Close"
+          >
+          </button>
+          <button 
+              onClick={onMinimize} 
+              className="w-5 h-5 bg-yellow-500 rounded-full hover:bg-yellow-600 transition-colors shadow-sm flex items-center justify-center group"
+              aria-label="Minimize"
+          >
+          </button>
+          <button 
+              onClick={onToggleMaximize} 
+              className="w-5 h-5 bg-green-500 rounded-full hover:bg-green-600 transition-colors shadow-sm flex items-center justify-center group"
+              aria-label="Maximize"
+          >
+          </button>
         </div>
         <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 select-none">
             {getTitle(config.id)}
         </span>
-        <div className="w-12"></div>
+        <div className="w-16"></div> {/* Spacer for balance */}
       </div>
       
       {/* Content */}
