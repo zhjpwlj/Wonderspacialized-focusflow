@@ -1,4 +1,5 @@
 
+
 export enum AppModule {
   DASHBOARD = 'DASHBOARD',
   TASKS = 'TASKS',
@@ -14,7 +15,8 @@ export enum AppModule {
   CLOCK = 'CLOCK',
   CALENDAR = 'CALENDAR',
   GOALS = 'GOALS',
-  MUSIC = 'MUSIC'
+  MUSIC = 'MUSIC',
+  THEME = 'THEME',
 }
 
 export interface WindowConfig {

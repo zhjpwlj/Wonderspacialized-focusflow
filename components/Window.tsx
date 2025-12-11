@@ -28,6 +28,7 @@ const getTitle = (id: AppModule) => {
         case AppModule.CALENDAR: return 'Calendar';
         case AppModule.GOALS: return 'Goals';
         case AppModule.MUSIC: return 'Music';
+        case AppModule.THEME: return 'Themes';
         default: return 'Application';
     }
 };
@@ -36,9 +37,8 @@ type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
 // Constants for layout boundaries
 const MENUBAR_HEIGHT = 28;
-// Dock is 56px height + bottom-2 (8px) + potential padding/shadow. 
-// Using 88px ensures windows float comfortably above it.
-const DOCK_HEIGHT = 88; 
+// Dock is 56px height + 8px from bottom (`bottom-2`), so its top edge is at 64px from the screen bottom.
+const DOCK_HEIGHT = 64; 
 
 const Window: React.FC<WindowProps> = ({ children, config, onClose, onMinimize, onToggleMaximize, onFocus, onUpdate }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -96,7 +96,7 @@ const Window: React.FC<WindowProps> = ({ children, config, onClose, onMinimize, 
       const newX = windowStartRect.current.x + dx;
       const newY = windowStartRect.current.y + dy;
 
-      const titleBarHeight = 40; 
+      const titleBarHeight = 32; // Corresponds to h-8
       
       // Clamp X to ensure a portion of the window is always visible horizontally
       const clampedX = Math.max(
@@ -116,35 +116,38 @@ const Window: React.FC<WindowProps> = ({ children, config, onClose, onMinimize, 
     if (isResizing) {
         let { x, y, width, height } = windowStartRect.current;
         
+        // Apply deltas from mouse movement
         if (isResizing.includes('e')) width += dx;
         if (isResizing.includes('w')) { width -= dx; x += dx; }
-        
-        if (isResizing.includes('s')) {
-             height += dy;
-             // Constrain height so bottom doesn't hit dock
-             if (y + height > window.innerHeight - DOCK_HEIGHT) {
-                 height = window.innerHeight - DOCK_HEIGHT - y;
-             }
-        }
-        
+        if (isResizing.includes('s')) height += dy;
         if (isResizing.includes('n')) {
-             // Constrain top so it doesn't hit menubar
-             const requestedY = y + dy;
-             if (requestedY < MENUBAR_HEIGHT) {
-                 const diff = MENUBAR_HEIGHT - requestedY;
-                 height -= dy - diff; // Adjust height change to stop at top
-                 y = MENUBAR_HEIGHT;
-             } else {
-                 height -= dy; 
-                 y += dy;
-             }
+            height -= dy;
+            y += dy;
         }
         
+        // Enforce minimum dimensions
+        width = Math.max(300, width);
+        height = Math.max(200, height);
+
+        // Re-apply boundary constraints AFTER enforcing minimums to fix overlap bugs
+        if (y < MENUBAR_HEIGHT) {
+            const overflow = MENUBAR_HEIGHT - y;
+            y = MENUBAR_HEIGHT;
+            height -= overflow; // Adjust height to compensate for position change
+        }
+        
+        if (y + height > window.innerHeight - DOCK_HEIGHT) {
+            height = window.innerHeight - DOCK_HEIGHT - y;
+        }
+        
+        // Ensure boundary checks didn't push height below minimum
+        height = Math.max(200, height);
+
         onUpdate({ 
             x, 
             y, 
-            width: Math.max(300, width), 
-            height: Math.max(200, height) 
+            width, 
+            height,
         });
     }
   }, [isDragging, isResizing, onUpdate, config.width]);
@@ -219,7 +222,7 @@ const Window: React.FC<WindowProps> = ({ children, config, onClose, onMinimize, 
 
       {/* Title Bar */}
       <div
-        className="h-10 flex items-center justify-between px-4 flex-shrink-0 bg-gradient-to-b from-white/50 to-transparent dark:from-white/10"
+        className="h-8 flex items-center justify-between px-4 flex-shrink-0 bg-gradient-to-b from-white/50 to-transparent dark:from-white/10 border-b border-white/20 dark:border-black/20"
         onMouseDown={(e) => handleStart(e, 'drag')}
         onTouchStart={(e) => handleStart(e, 'drag')}
         onDoubleClick={onToggleMaximize}

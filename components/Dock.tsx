@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, CheckSquare, Timer, Clock as PomodoroIcon, BookOpen, Users, Settings, BrainCircuit, Calculator, NotebookText, CloudSun, AlarmClock, Calendar as CalendarIcon, Target, Music as MusicIcon, Grid, HeartPulse } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Timer, Clock as PomodoroIcon, BookOpen, Users, Settings, BrainCircuit, Calculator, NotebookText, CloudSun, AlarmClock, Calendar as CalendarIcon, Target, Music as MusicIcon, Grid, HeartPulse, Image as ThemeIcon } from 'lucide-react';
 import { AppModule, WindowConfig } from '../types';
 
 interface DockProps {
@@ -24,6 +24,7 @@ const appIcons: Record<AppModule, React.ElementType> = {
   [AppModule.CALENDAR]: CalendarIcon,
   [AppModule.GOALS]: Target,
   [AppModule.MUSIC]: MusicIcon,
+  [AppModule.THEME]: ThemeIcon,
 };
 
 const appNames: Record<AppModule, string> = {
@@ -42,6 +43,7 @@ const appNames: Record<AppModule, string> = {
   [AppModule.CALENDAR]: 'Calendar',
   [AppModule.GOALS]: 'Goals',
   [AppModule.MUSIC]: 'Music',
+  [AppModule.THEME]: 'Themes',
 };
 
 type DockFolder = {
@@ -57,12 +59,13 @@ const dockItems: DockItem[] = [
   AppModule.DASHBOARD,
   AppModule.TASKS,
   AppModule.CHAT,
+  AppModule.THEME,
   'divider',
   {
     type: 'folder',
     name: 'Utilities',
     icon: Grid,
-    apps: [AppModule.CALCULATOR, AppModule.CLOCK, AppModule.NOTES, AppModule.WEATHER, AppModule.CALENDAR],
+    apps: [AppModule.CALCULATOR, AppModule.CLOCK, AppModule.NOTES, AppModule.WEATHER, AppModule.CALENDAR, AppModule.SETTINGS],
   },
   {
     type: 'folder',
@@ -70,8 +73,6 @@ const dockItems: DockItem[] = [
     icon: HeartPulse,
     apps: [AppModule.TIMER, AppModule.POMODORO, AppModule.JOURNAL, AppModule.GOALS, AppModule.MUSIC, AppModule.SOCIAL],
   },
-  'divider',
-  AppModule.SETTINGS,
 ];
 
 

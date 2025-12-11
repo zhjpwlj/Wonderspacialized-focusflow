@@ -10,6 +10,7 @@ import Journal from './components/Journal';
 import StudyRoom from './components/StudyRoom';
 import ChatBot from './components/ChatBot';
 import Settings from './components/Settings';
+import Theme from './components/Theme';
 import ConfirmationModal from './components/ConfirmationModal';
 import Calculator from './components/Calculator';
 import Notes from './components/Notes';
@@ -21,6 +22,67 @@ import Music from './components/Music';
 import { AppModule, Project, Task, TimeEntry, JournalEntry, ActiveTimer, WindowConfig, Note, Event, Goal } from './types';
 import { usePersistentState } from './hooks/usePersistentState';
 import { wallpapers, accentColors } from './config/theme';
+
+const getDefaultWindowSize = (appId: AppModule) => {
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const MENUBAR_HEIGHT = 28;
+  const DOCK_HEIGHT = 64;
+  const availableHeight = screenHeight - MENUBAR_HEIGHT - DOCK_HEIGHT;
+  const availableWidth = screenWidth;
+  
+  const paddingX = 100;
+  const paddingY = 120;
+
+  switch (appId) {
+    case AppModule.CHAT:
+      return {
+        width: Math.min(450, availableWidth - 40),
+        height: Math.min(700, availableHeight - 40),
+      };
+    case AppModule.CALCULATOR:
+      return {
+        width: 340,
+        height: 500,
+      };
+    case AppModule.NOTES:
+       return {
+        width: Math.min(700, availableWidth - paddingX),
+        height: Math.min(550, availableHeight - paddingY),
+      };
+    case AppModule.WEATHER:
+      return {
+        width: Math.min(400, availableWidth - 40),
+        height: Math.min(650, availableHeight - 40),
+      };
+    case AppModule.CLOCK:
+      return {
+        width: Math.min(500, availableWidth - paddingX),
+        height: Math.min(600, availableHeight - paddingY),
+      };
+    case AppModule.MUSIC:
+      return {
+        width: 380,
+        height: 420,
+      };
+    case AppModule.POMODORO:
+        return {
+            width: 420,
+            height: 580,
+        }
+    case AppModule.THEME:
+      return {
+        width: Math.min(900, availableWidth - 80),
+        height: Math.min(750, availableHeight - 60),
+      };
+    default:
+      return {
+        width: Math.min(800, availableWidth - paddingX),
+        height: Math.min(600, availableHeight - paddingY),
+      };
+  }
+};
+
 
 const App: React.FC = () => {
   // THEME STATE
@@ -74,7 +136,7 @@ const App: React.FC = () => {
   }, [isDarkMode]);
 
   useEffect(() => {
-    const selectedColor = accentColors.find(c => c.hex === accentColor) || accentColors[0];
+    const selectedColor = accentColors.find(c => c.hex === accentColor) || { hex: accentColor, hoverHex: accentColor };
     document.documentElement.style.setProperty('--accent-color', selectedColor.hex);
     document.documentElement.style.setProperty('--accent-color-hover', selectedColor.hoverHex);
   }, [accentColor]);
@@ -89,12 +151,23 @@ const App: React.FC = () => {
       if (existingIndex !== -1) {
         return prev.map((w, i) => i === existingIndex ? { ...w, isMinimized: false, zIndex: newZIndex } : w);
       }
+      
+      const { width, height } = getDefaultWindowSize(appId);
+      const MENUBAR_HEIGHT = 28;
+      const DOCK_HEIGHT = 64;
+      const availableHeight = window.innerHeight - MENUBAR_HEIGHT - DOCK_HEIGHT;
+      const availableWidth = window.innerWidth;
+      
+      // Ensure windows spawn fully within the visible area
+      const x = Math.max(20, Math.min(Math.random() * (availableWidth - width - 40), availableWidth - width - 20));
+      const y = Math.max(MENUBAR_HEIGHT + 10, Math.min(Math.random() * (availableHeight - height - 20) + MENUBAR_HEIGHT, availableHeight - height + MENUBAR_HEIGHT - 10));
+
       return [...prev, {
         id: appId,
-        x: Math.random() * 200 + 100,
-        y: Math.random() * 100 + 50,
-        width: 800,
-        height: 600,
+        x: x,
+        y: y,
+        width: width,
+        height: height,
         zIndex: newZIndex,
         isMinimized: false,
         isMaximized: false,
@@ -204,7 +277,8 @@ const App: React.FC = () => {
       case AppModule.JOURNAL: return <Journal entries={journalEntries} onAddEntry={handleAddJournalEntry} />;
       case AppModule.SOCIAL: return <StudyRoom />;
       case AppModule.CHAT: return <ChatBot />;
-      case AppModule.SETTINGS: return <Settings isDarkMode={isDarkMode} onToggleDarkMode={() => setIsDarkMode(p => !p)} accentColor={accentColor} onSetAccentColor={setAccentColor} wallpaper={wallpaper} onSetWallpaper={setWallpaper} onExportData={handleExportData} onWipeData={() => setIsWipeModalOpen(true)} />;
+      case AppModule.SETTINGS: return <Settings onExportData={handleExportData} onWipeData={() => setIsWipeModalOpen(true)} />;
+      case AppModule.THEME: return <Theme isDarkMode={isDarkMode} onToggleDarkMode={() => setIsDarkMode(p => !p)} accentColor={accentColor} onSetAccentColor={setAccentColor} wallpaper={wallpaper} onSetWallpaper={setWallpaper} />;
       case AppModule.CALCULATOR: return <Calculator />;
       case AppModule.NOTES: return <Notes notes={notes} onAddNote={handleAddNote} onUpdateNote={handleUpdateNote} onDeleteNote={handleDeleteNote} />;
       case AppModule.WEATHER: return <Weather />;
@@ -235,7 +309,7 @@ const App: React.FC = () => {
         onFocusWindow={focusWindow}
       />
       
-      <main className="h-full w-full pt-[var(--menubar-height)]">
+      <main className="h-full w-full">
         <div className="relative h-full w-full">
           {windows.map(config => (
             <Window

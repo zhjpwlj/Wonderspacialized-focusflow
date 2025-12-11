@@ -33,6 +33,7 @@ const getTitle = (id: AppModule) => {
     [AppModule.CALENDAR]: 'Calendar',
     [AppModule.GOALS]: 'Goals',
     [AppModule.MUSIC]: 'Music',
+    [AppModule.THEME]: 'Themes',
   };
   return titles[id] || 'Application';
 };
